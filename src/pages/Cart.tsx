@@ -5,18 +5,42 @@ import { useCart } from '@/contexts/CartContext';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { api } from "@/services/api";
 
 export default function Cart() {
   const { items, removeFromCart, updateQuantity, total, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const handleCheckout = () => {
-    // Replace with: api.createOrder({ items, total })
-    toast.success('Order placed successfully!');
-    clearCart();
-    navigate('/profile');
+  // 🔥 Checkout handler FIXED to include userId
+  const handleCheckout = async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+      toast.error("Please login before placing an order");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await api.createOrder({
+        userId: user.user_id || user.id, // support DB stored users AND frontend users
+        total,
+        items
+      });
+
+      toast.success("Order placed successfully!");
+      clearCart();
+      navigate('/profile');
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to place order");
+    }
   };
 
+  // ---------------------------------------------------------
+  // EMPTY CART UI
+  // ---------------------------------------------------------
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-background">
@@ -35,6 +59,9 @@ export default function Cart() {
     );
   }
 
+  // ---------------------------------------------------------
+  // CART UI WITH ITEMS
+  // ---------------------------------------------------------
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -42,6 +69,7 @@ export default function Cart() {
         <h1 className="text-4xl font-bold mb-8">Shopping Cart</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* LEFT SIDE: CART ITEMS */}
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <Card key={item.id}>
@@ -52,25 +80,39 @@ export default function Cart() {
                       alt={item.name}
                       className="w-24 h-24 object-cover rounded"
                     />
+
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
-                      <p className="text-primary font-bold mb-3">${item.price.toFixed(2)}</p>
+                      <p className="text-primary font-bold mb-3">
+                        ${item.price.toFixed(2)}
+                      </p>
+
+                      {/* QUANTITY CONTROLS */}
                       <div className="flex items-center gap-3">
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="font-semibold w-8 text-center">{item.quantity}</span>
+
+                        <span className="font-semibold w-8 text-center">
+                          {item.quantity}
+                        </span>
+
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
+
                         <Button
                           variant="ghost"
                           size="icon"
@@ -87,10 +129,12 @@ export default function Cart() {
             ))}
           </div>
 
+          {/* RIGHT SIDE: SUMMARY */}
           <div>
             <Card className="sticky top-20">
               <CardContent className="p-6 space-y-4">
                 <h2 className="text-2xl font-bold">Order Summary</h2>
+
                 <div className="space-y-2 py-4 border-y border-border">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal</span>
@@ -101,10 +145,12 @@ export default function Cart() {
                     <span>Free</span>
                   </div>
                 </div>
+
                 <div className="flex justify-between text-xl font-bold">
                   <span>Total</span>
                   <span className="text-primary">${total.toFixed(2)}</span>
                 </div>
+
                 <Button onClick={handleCheckout} className="w-full" size="lg">
                   Place Order
                 </Button>

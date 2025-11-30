@@ -1,69 +1,84 @@
-// Configure your Flask backend URL here
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL;
 
 export const api = {
-  // Products
+  // ============================================================
+  // PRODUCTS
+  // ============================================================
+
+  // Fetch all products
   getProducts: async () => {
-    const response = await fetch(`${API_BASE_URL}/products`);
-    return response.json();
+    const res = await fetch(`${API}/products`);
+    return res.json();
   },
 
+  // Fetch single product
   getProduct: async (id: number) => {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
-    return response.json();
+    const res = await fetch(`${API}/products/${id}`);
+    return res.json();
   },
 
+  // Create product
   createProduct: async (product: any) => {
-    const response = await fetch(`${API_BASE_URL}/products`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`${API}/products`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(product),
     });
-    return response.json();
+    return res.json();
   },
 
+  // Update product
   updateProduct: async (id: number, product: any) => {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`${API}/products/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(product),
     });
-    return response.json();
+    return res.json();
   },
 
+  // Delete product
   deleteProduct: async (id: number) => {
-    await fetch(`${API_BASE_URL}/products/${id}`, {
-      method: 'DELETE',
+    await fetch(`${API}/products/${id}`, {
+      method: "DELETE",
     });
   },
 
-  // Orders
+  // ============================================================
+  // ORDERS
+  // ============================================================
+
+  // Create a new order
   createOrder: async (orderData: any) => {
-    const response = await fetch(`${API_BASE_URL}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`${API}/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderData),
     });
-    return response.json();
+
+    if (!res.ok) throw new Error("Failed to place order");
+    return res.json();
   },
 
-  getOrders: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/orders?userId=${userId}`);
-    return response.json();
+  // Get all orders for a specific user (Profile page)
+  getUserOrders: async (userId: number) => {
+    const res = await fetch(`${API}/orders/user/${userId}`);
+    return res.json();
   },
 
-  // User
-  getProfile: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/users/${userId}`);
-    return response.json();
+  // Get all orders (Admin dashboard page)
+  getAllOrders: async () => {
+    const res = await fetch(`${API}/orders`);
+    return res.json();
   },
 
-  updateProfile: async (userId: string, data: any) => {
-    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+  // Update status of an order (Admin)
+  updateOrderStatus: async (orderId: number, status: string) => {
+    const res = await fetch(`${API}/orders/${orderId}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
     });
-    return response.json();
+    return res.json();
   },
 };

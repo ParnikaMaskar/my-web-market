@@ -8,44 +8,9 @@ import { Star, ShoppingCart, Heart, ArrowLeft, Truck, Shield, RefreshCw } from '
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { api } from "@/services/api";
 
-// Mock product data - will be replaced with API call
-const mockProducts = [
-  {
-    id: 1,
-    name: 'Premium Wireless Headphones',
-    price: 299.99,
-    originalPrice: 399.99,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
-    images: [
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
-      'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800',
-      'https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=800',
-    ],
-    description: 'Experience premium sound quality with our wireless headphones featuring advanced noise cancellation technology.',
-    category: 'Electronics',
-    rating: 4.5,
-    reviews: 1234,
-    inStock: true,
-    features: [
-      'Active Noise Cancellation',
-      '30-hour battery life',
-      'Premium leather cushions',
-      'Bluetooth 5.0',
-      'Built-in microphone',
-    ],
-    specifications: {
-      'Brand': 'AudioPro',
-      'Model': 'AP-300X',
-      'Weight': '250g',
-      'Connectivity': 'Bluetooth 5.0',
-      'Battery Life': '30 hours',
-      'Charging Time': '2 hours',
-    },
-  },
-  // Add more mock products...
-];
-
+// TEMP: Static mock reviews (your backend doesn’t support reviews yet)
 const mockReviews = [
   {
     id: 1,
@@ -77,25 +42,37 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+
   const [product, setProduct] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // ⭐ LIVE API CALL
   useEffect(() => {
-    // Replace with: api.getProduct(id)
-    setTimeout(() => {
-      const found = mockProducts.find(p => p.id === Number(id));
-      setProduct(found);
-      setLoading(false);
-    }, 300);
+    let isMounted = true;
+
+    const loadProduct = async () => {
+      try {
+        const data = await api.getProduct(Number(id));
+        if (isMounted) {
+          setProduct(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch product", err);
+        if (isMounted) setProduct(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadProduct();
+    return () => { isMounted = false };
   }, [id]);
 
   const handleAddToCart = () => {
     if (product) {
-      for (let i = 0; i < quantity; i++) {
-        addToCart(product);
-      }
+      for (let i = 0; i < quantity; i++) addToCart(product);
       toast.success(`${quantity} ${product.name}(s) added to cart`);
     }
   };
@@ -105,6 +82,9 @@ export default function ProductDetail() {
     navigate('/cart');
   };
 
+  // -------------------------------
+  // LOADING UI
+  // -------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -133,6 +113,9 @@ export default function ProductDetail() {
     );
   }
 
+  // -------------------------------
+  // PRODUCT NOT FOUND
+  // -------------------------------
   if (!product) {
     return (
       <div className="min-h-screen bg-background">
@@ -147,28 +130,38 @@ export default function ProductDetail() {
     );
   }
 
+  // ⭐ DB2 returns:
+  // image = product.image_main (renamed in backend)
+  // images = JSON array
+  const images = product.images?.length ? product.images : [product.image];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <main className="container mx-auto px-4 py-6">
+
         <Button variant="ghost" onClick={() => navigate('/')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
-          {/* Product Images */}
+
+          {/* ----------------------------
+              PRODUCT IMAGES
+          ------------------------------ */}
           <div className="space-y-4">
             <Card className="overflow-hidden">
               <img
-                src={product.images?.[selectedImage] || product.image}
+                src={images[selectedImage]}
                 alt={product.name}
                 className="w-full aspect-square object-cover"
               />
             </Card>
+
             <div className="grid grid-cols-4 gap-2">
-              {(product.images || [product.image]).map((img: string, idx: number) => (
+              {images.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
@@ -182,17 +175,21 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Product Info */}
+          {/* ----------------------------
+              PRODUCT INFO
+          ------------------------------ */}
           <div className="space-y-6">
+
             <div>
               <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
                       className={`h-5 w-5 ${
-                        i < Math.floor(product.rating)
+                        i < Math.floor(product.rating ?? 0)
                           ? 'fill-secondary text-secondary'
                           : 'text-muted-foreground'
                       }`}
@@ -207,20 +204,13 @@ export default function ProductDetail() {
 
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</span>
-                {product.originalPrice && (
-                  <>
-                    <span className="text-2xl text-muted-foreground line-through">
-                      ${product.originalPrice.toFixed(2)}
-                    </span>
-                    <span className="text-lg font-semibold text-secondary">
-                      Save {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                    </span>
-                  </>
-                )}
+                <span className="text-4xl font-bold text-primary">
+                  ${product.price?.toFixed(2)}
+                </span>
               </div>
-              <p className={`text-sm font-medium ${product.inStock ? 'text-primary' : 'text-destructive'}`}>
-                {product.inStock ? 'In Stock' : 'Out of Stock'}
+
+              <p className="text-sm font-medium text-primary">
+                In Stock
               </p>
             </div>
 
@@ -245,6 +235,7 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Quantity Buttons */}
             <div className="flex items-center gap-4">
               <div className="flex items-center border border-border rounded-md">
                 <button
@@ -263,19 +254,23 @@ export default function ProductDetail() {
               </div>
             </div>
 
+            {/* ACTION BUTTONS */}
             <div className="flex gap-3">
               <Button onClick={handleBuyNow} size="lg" className="flex-1">
                 Buy Now
               </Button>
+
               <Button onClick={handleAddToCart} variant="secondary" size="lg" className="flex-1">
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
               </Button>
+
               <Button variant="outline" size="lg">
                 <Heart className="h-5 w-5" />
               </Button>
             </div>
 
+            {/* Delivery Info */}
             <div className="grid grid-cols-3 gap-4 pt-4">
               <div className="flex flex-col items-center text-center p-3 bg-muted rounded-lg">
                 <Truck className="h-6 w-6 mb-2 text-primary" />
@@ -290,26 +285,30 @@ export default function ProductDetail() {
                 <span className="text-sm font-medium">Easy Returns</span>
               </div>
             </div>
+
           </div>
         </div>
 
-        {/* Tabs for Details and Reviews */}
+        {/* ----------------------------
+            TABS: SPECS + REVIEWS
+        ------------------------------ */}
         <Tabs defaultValue="specifications" className="mb-12">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="specifications">Specifications</TabsTrigger>
             <TabsTrigger value="reviews">Reviews ({mockReviews.length})</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="specifications" className="mt-6">
             <Card className="p-6">
               <h3 className="text-xl font-bold mb-4">Technical Specifications</h3>
               <div className="grid md:grid-cols-2 gap-4">
-                {product.specifications && Object.entries(product.specifications).map(([key, value]) => (
-                  <div key={key} className="flex border-b border-border pb-3">
-                    <span className="font-medium w-1/2">{key}</span>
-                    <span className="text-muted-foreground">{value as string}</span>
-                  </div>
-                ))}
+                {product.specifications &&
+                  Object.entries(product.specifications).map(([key, value]) => (
+                    <div key={key} className="flex border-b border-border pb-3">
+                      <span className="font-medium w-1/2">{key}</span>
+                      <span className="text-muted-foreground">{value as string}</span>
+                    </div>
+                  ))}
               </div>
             </Card>
           </TabsContent>
@@ -349,6 +348,7 @@ export default function ProductDetail() {
             </div>
           </TabsContent>
         </Tabs>
+
       </main>
     </div>
   );

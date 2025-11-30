@@ -1,3 +1,19 @@
+###########################################
+# FRONTEND - React + Vite
+###########################################
+
+node_modules/
+dist/
+dist-ssr/
+.vite/
+
+# Local environment files
+*.local
+.env
+.env.local
+.env.development.local
+.env.production.local
+
 # Logs
 logs
 *.log
@@ -7,18 +23,58 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+###########################################
+# BACKEND - Python + FastAPI
+###########################################
 
-# Editor directories and files
+# Virtual environment
+venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# DB2 Client binaries (HUGE)
+backend/clidriver/
+
+# Compiled
+*.so
+*.dll
+
+# Local environment
+backend/.env
+*.env
+
+###########################################
+# OS / Editor Files
+###########################################
+
+.DS_Store
+Thumbs.db
+.idea/
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+###########################################
+# Build / Temp Files
+###########################################
+
+*.egg-info/
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+###########################################
+# USER UPLOADS / TEMP
+###########################################
+
+uploads/
+temp/

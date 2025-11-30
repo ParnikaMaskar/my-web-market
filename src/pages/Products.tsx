@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ProductCard } from '@/components/ProductCard';
 import { Navbar } from '@/components/Navbar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,147 +9,66 @@ import { Card } from '@/components/ui/card';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { api } from "@/services/api";
 
-const categories = ['All', 'Electronics', 'Audio', 'Computers', 'Accessories', 'Gaming'];
-
-const mockProducts = [
-  {
-    id: 1,
-    name: 'Premium Wireless Headphones',
-    price: 299.99,
-    originalPrice: 399.99,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
-    description: 'High-quality wireless headphones with noise cancellation',
-    category: 'Audio',
-    rating: 4.5,
-    reviews: 1234,
-  },
-  {
-    id: 2,
-    name: 'Smart Watch Pro',
-    price: 399.99,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-    description: 'Advanced fitness tracking and notifications',
-    category: 'Electronics',
-    rating: 4.7,
-    reviews: 892,
-  },
-  {
-    id: 3,
-    name: 'Laptop Stand',
-    price: 49.99,
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500',
-    description: 'Ergonomic aluminum laptop stand',
-    category: 'Accessories',
-    rating: 4.3,
-    reviews: 456,
-  },
-  {
-    id: 4,
-    name: 'Mechanical Keyboard',
-    price: 149.99,
-    originalPrice: 199.99,
-    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=500',
-    description: 'RGB backlit mechanical gaming keyboard',
-    category: 'Gaming',
-    rating: 4.8,
-    reviews: 2103,
-  },
-  {
-    id: 5,
-    name: 'Wireless Mouse',
-    price: 79.99,
-    image: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=500',
-    description: 'Precision wireless mouse with ergonomic design',
-    category: 'Computers',
-    rating: 4.4,
-    reviews: 678,
-  },
-  {
-    id: 6,
-    name: 'USB-C Hub',
-    price: 89.99,
-    image: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=500',
-    description: 'Multi-port USB-C hub with HDMI and card reader',
-    category: 'Accessories',
-    rating: 4.2,
-    reviews: 334,
-  },
-  {
-    id: 7,
-    name: 'Gaming Headset',
-    price: 179.99,
-    image: 'https://images.unsplash.com/photo-1599669454699-248893623440?w=500',
-    description: '7.1 surround sound gaming headset with RGB',
-    category: 'Gaming',
-    rating: 4.6,
-    reviews: 1567,
-  },
-  {
-    id: 8,
-    name: 'Bluetooth Speaker',
-    price: 129.99,
-    originalPrice: 179.99,
-    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500',
-    description: 'Portable waterproof bluetooth speaker',
-    category: 'Audio',
-    rating: 4.5,
-    reviews: 891,
-  },
-];
+const categories = ['All', 'Electronics', 'Audio', 'Computers', 'Accessories', 'Gaming', 'Other'];
 
 export default function Products() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // GET all products via react-query
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: api.getProducts,
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    // Replace with: api.getProducts()
-    setTimeout(() => {
-      setProducts(mockProducts);
-      setFilteredProducts(mockProducts);
-      setLoading(false);
-    }, 500);
-  }, []);
+  // Filtering with useMemo (optimized)
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
 
-  useEffect(() => {
     let filtered = products;
 
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter(product =>
+    // search text filter (case-insensitive)
+    if (searchQuery.trim() !== "") {
+      filtered = filtered.filter((product: any) =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+        (product.description || "").toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Filter by category
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+    // category filter (case-insensitive)
+    if (selectedCategory !== "All") {
+      filtered = filtered.filter(
+        (product: any) =>
+          (product.category || "").toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
 
-    // Filter by price range
+    // price range filter
     filtered = filtered.filter(
-      product => product.price >= priceRange[0] && product.price <= priceRange[1]
+      (product: any) =>
+        product.price >= priceRange[0] && product.price <= priceRange[1]
     );
 
-    setFilteredProducts(filtered);
-  }, [searchQuery, selectedCategory, priceRange, products]);
+    return filtered;
 
+  }, [products, searchQuery, selectedCategory, priceRange]);
+
+  // Reset filters
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('All');
-    setPriceRange([0, 500]);
+    setPriceRange([0, 100000]);
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero Section */}
       <div className="gradient-hero text-primary-foreground py-12 mb-8">
         <div className="container mx-auto px-4">
@@ -158,7 +78,8 @@ export default function Products() {
       </div>
 
       <main className="container mx-auto px-4 pb-12">
-        {/* Search and Filter Bar */}
+        
+        {/* Search + Filters */}
         <div className="mb-6 space-y-4">
           <div className="flex gap-3">
             <div className="relative flex-1">
@@ -170,29 +91,27 @@ export default function Products() {
                 className="pl-10"
               />
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="gap-2"
-            >
+
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="gap-2">
               <SlidersHorizontal className="h-4 w-4" />
               Filters
             </Button>
           </div>
 
-          {/* Category Pills */}
+          {/* Category badges */}
           <div className="flex gap-2 flex-wrap">
             {categories.map((category) => (
               <Badge
                 key={category}
-                variant={selectedCategory === category ? 'default' : 'outline'}
+                variant={selectedCategory === category ? "default" : "outline"}
                 className="cursor-pointer transition-smooth"
                 onClick={() => setSelectedCategory(category)}
               >
                 {category}
               </Badge>
             ))}
-            {(searchQuery || selectedCategory !== 'All') && (
+
+            {(searchQuery || selectedCategory !== "All" || priceRange[0] !== 0 || priceRange[1] !== 100000) && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 gap-1">
                 <X className="h-3 w-3" />
                 Clear
@@ -200,7 +119,7 @@ export default function Products() {
             )}
           </div>
 
-          {/* Filter Panel */}
+          {/* Price filter panel */}
           {showFilters && (
             <Card className="p-4">
               <h3 className="font-semibold mb-4">Price Range</h3>
@@ -229,13 +148,14 @@ export default function Products() {
 
         <div className="flex items-center justify-between mb-4">
           <p className="text-muted-foreground">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? "s" : ""} found
           </p>
         </div>
 
         <Separator className="mb-6" />
 
-        {loading ? (
+        {/* Loading state */}
+        {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-4">
@@ -245,12 +165,18 @@ export default function Products() {
               </div>
             ))}
           </div>
+
         ) : filteredProducts.length === 0 ? (
+
+          // No result state
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg mb-4">No products found</p>
             <Button onClick={clearFilters} variant="outline">Clear Filters</Button>
           </div>
+
         ) : (
+
+          // Final Product Grid
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} {...product} />
