@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { ProtectedRoute, AdminRoute } from "./ProtectedRoutes";
+import InvoicePage from "./pages/InvoicePage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/invoice/:orderId" element={<InvoicePage />} />
 
                 {/* USER PROTECTED */}
                 <Route

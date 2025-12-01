@@ -175,7 +175,7 @@ def create_order(payload: dict, db: Session = Depends(get_db)):
 
     # Insert order
     db.execute(
-        text("INSERT INTO ASUS.ORDERS (USER_ID, TOTAL_AMOUNT, STATUS) VALUES (:u, :t, 'Pending')"),
+        text("INSERT INTO ASUS.ORDERS (USER_ID, TOTAL_AMOUNT, STATUS) VALUES (:u, :t, 'Pending Confirmation')"),
         {"u": user_id, "t": total_amount}
     )
     db.commit()
@@ -317,3 +317,66 @@ def update_order_status(order_id: int, data: dict, db: Session = Depends(get_db)
 
     db.commit()
     return {"success": True, "message": "Order status updated"}
+
+# ===============================================================
+# 9) GET SINGLE ORDER (FOR INVOICE)
+# ===============================================================
+@app.get("/orders/{order_id}")
+def get_order_by_id(order_id: int, db: Session = Depends(get_db)):
+
+    sql = text("""
+        SELECT
+            o.order_id,
+            o.user_id,
+            u.name AS user_name,
+            u.email AS user_email,
+            o.total_amount,
+            o.status,
+            o.created_at,
+            i.product_id,
+            i.quantity,
+            i.price,
+            p.name AS product_name,
+            p.image_main
+        FROM ASUS.ORDERS o
+        JOIN ASUS.USERS u ON o.user_id = u.user_id
+        JOIN ASUS.ORDER_ITEMS i ON o.order_id = i.order_id
+        JOIN ASUS.PRODUCTS p ON i.product_id = p.id
+        WHERE o.order_id = :oid
+        ORDER BY o.created_at DESC
+    """)
+
+    rows = db.execute(sql, {"oid": order_id}).fetchall()
+
+    if not rows:
+        raise HTTPException(404, "Order not found")
+
+    order = None
+
+    for row in rows:
+        r = row._mapping
+
+        if order is None:
+            order = {
+                "id": r["order_id"],
+                "total": float(r["total_amount"]),
+                "status": r["status"],
+                "date": str(r["created_at"]),
+                "user": {
+                    "id": r["user_id"],
+                    "name": r["user_name"],
+                    "email": r["user_email"],
+                },
+                "items": []
+            }
+
+        order["items"].append({
+            "name": r["product_name"],
+            "quantity": int(r["quantity"]),
+            "price": float(r["price"]),
+            "product_id": r["product_id"],
+            "image": r["image_main"]
+        })
+
+    return order
+

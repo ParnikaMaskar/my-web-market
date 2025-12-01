@@ -81,4 +81,11 @@ export const api = {
     });
     return res.json();
   },
+
+  getOrderById: async (orderId: number) => {
+  const res = await fetch(`${API}/orders/${orderId}`);
+  if (!res.ok) throw new Error("Failed to fetch order");
+  return res.json();
+  }
+
 };

@@ -77,10 +77,10 @@ export const ProductCard = ({ id, name, price, originalPrice, image, description
             </div>
           )}
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-primary">${price.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-primary">₹{price.toFixed(2)}</p>
             {originalPrice && (
               <p className="text-sm text-muted-foreground line-through">
-                ${originalPrice.toFixed(2)}
+                ₹{originalPrice.toFixed(2)}
               </p>
             )}
           </div>

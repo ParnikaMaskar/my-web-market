@@ -16,6 +16,7 @@ import {
 import { Plus, Pencil, Trash2, X, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
+import AdminDashboard from "@/components/AdminDashboard";
 
 // --------------------------------------------------
 // TYPES
@@ -50,7 +51,8 @@ type User = {
 export default function Admin() {
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"Products" | "Orders">("Products");
+  const [activeTab, setActiveTab] = useState<"Dashboard" | "Products" | "Orders">("Dashboard");
+
 
   const categories = [
     "Audio",
@@ -246,6 +248,12 @@ export default function Admin() {
 
         {/* TABS */}
         <div className="flex gap-6 mb-6">
+          <Button
+            variant={activeTab === "Dashboard" ? "default" : "outline"}
+            onClick={() => setActiveTab("Dashboard")}
+          >
+            Dashboard
+          </Button>
           <Button
             variant={activeTab === "Products" ? "default" : "outline"}
             onClick={() => setActiveTab("Products")}
@@ -608,7 +616,7 @@ export default function Admin() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option value="All">All</option>
-                  <option value="Pending">Pending</option>
+                  <option value="Pending">Confirmed</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
                   <option value="Cancelled">Cancelled</option>
@@ -673,7 +681,7 @@ export default function Admin() {
                         })
                       }
                     >
-                      <option value="Pending">Pending</option>
+                      <option value="Pending">Confirmed</option>
                       <option value="Shipped">Shipped</option>
                       <option value="Delivered">Delivered</option>
                       <option value="Cancelled">Cancelled</option>
@@ -683,6 +691,9 @@ export default function Admin() {
               ))}
             </div>
           </div>
+        )}
+        {activeTab === "Dashboard" && (
+          <AdminDashboard allOrders={allOrders} products={products} />
         )}
       </main>
     </div>

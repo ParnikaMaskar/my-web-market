@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export default function Profile() {
   const [user, setUser] = useState(getCurrentUser());
   const [orders, setOrders] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
 
   // ---------------------------
   // FETCH USER + ORDERS
@@ -181,6 +183,18 @@ export default function Profile() {
                           ₹{order.total.toFixed(2)}
                         </span>
                       </div>
+
+                      {/* Invoice actions */}
+                      <div className="mt-4 flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/invoice/${order.id}`)}
+                        >
+                          Download Invoice
+                        </Button>
+                      </div>
+
                     </CardContent>
                   </Card>
                 ))
